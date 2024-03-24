@@ -6,6 +6,7 @@ Created on Mon October 10 10:00h 2020
 """
 from controller import Controller, DAO, InputGenerator
 from dataLayer import DAO
+# pip install pyqt5
 from PyQt5 import QtWidgets, uic, QtCore, QtGui, QtWidgets
 from PyQt5.QtGui import QColor
 from PyQt5.QtWidgets import QMainWindow, QFileDialog, QMessageBox
@@ -13,6 +14,7 @@ import sys
 import os.path
 
 # criar grafico IR
+# pip install matplotlib
 import matplotlib.pyplot as graph
 import math
 
@@ -180,65 +182,57 @@ class Ui(QtWidgets.QMainWindow):
     '''
     #calcula a convolucao do espectro e grava
     def plotIR(self, irData, batchJob = False):
-        #extrair freqs, Intensidade
-        frequency = []  #  numero de onda de 1 vibração
-        T2_list = [] # intensidade - valor do calculo dft
-        lista = []
-        nvib = (len(irData))
-        for i in range(nvib):
-            lista =irData[i].strip(" ").split() 
-            frequency.append(float(lista[0].replace(',','.')))
-            T2_list.append(float(lista[1].replace(',','.')))
+        # Extrair frequências e intensidades
+        frequency = []
+        T2_list = []
+        for data in irData:
+            freq, intensity = map(lambda x: float(x.replace(',', '.')), data.strip().split())
+            frequency.append(freq)
+            T2_list.append(intensity)
 
-        calc_Intensity = []
-        wave = []
-        wavemin =400
-        wavemax = 4001 #(vai gerar de 400 a 4000)
+        # Configurações para a convolução
+        wavemin = 400
+        wavemax = 4001
         delta = 1
-        npontos = int((wavemax - wavemin)/delta)
-        omega = 10.0 # variar esse valor para mudar largura picos
+        omega = 10.0
 
-        for i in range(wavemin, wavemax, delta):            
-            calc_Intensity.append(0.0)
-            wave.append(0.0)
+         # Inicialização das listas de ondas e intensidades calculadas
+        wave = list(range(wavemin, wavemax, delta))
+        calc_Intensity = [0.0] * len(wave)
 
-        scale = 1.0   #scaling factor
+        # Fator de escala
+        scale = 1.0
         
         ##################################################
          # p/ cd vibração da molécula tem um num de onda (frequency) e a intensidade T2
          # nessa conversão, 1o  usarei a escala de 400 (wavemin) a 4004, então seão 901 pontos
-         #cd ponto é a somatória da contribuição de T2 em cada num de onda, com a expressão de Lorentz
+         # cd ponto é a somatória da contribuição de T2 em cada num de onda, com a expressão de Lorentz
          # omega = FWHH
-        path, arquivo = os.path.split(self.dataObj.filename)
-        saida =  path + "//" + arquivo.rstrip(".out") + "_Lorenz_IR_1cm_" + str(omega) + ".csv" 
-        try:
-            if (omega > 0):
-                for j in range(npontos):                
-                    for i in range(0, nvib):  
-                        wave[j] = (j * delta) + wavemin
-                        calc_Intensity[j] += scale * T2_list[i] * omega/(4* (wave[j] - frequency[i])**2 + omega**2)
-                        
-            maximo = max(calc_Intensity)
-            normalized = [valor/maximo for valor in calc_Intensity]
-            convertido = [10**(-1 * valor) for valor in normalized]
-        
-       # saida = self.dataObj.filename.rstrip("out") + str(omega) + ".ir.csv"   
-        #gravar( arquivo de saida, numero de onda, I calculado, I normalizado,  conversao pra absorbancia)        
-        #self.gravar(saida, wave, calc_Intensity, normalized, convertido)
-        #no excel, escolher a coluna 1 e 4 = grafico plotado 
-       
-            self.controller.gravar(saida, wave, calc_Intensity, normalized, convertido)
-            
-            if (not batchJob):
-                self.plot_graph(self.dataObj.filename , wave, convertido)
-            
-            if (batchJob):
-                self.txtInput.append( "\n ARQUIVO CSV GERADO: " + saida )
+        # Cálculo da convolução usando a expressão de Lorentz
+        for j in range(len(wave)):
+            for i in range(len(irData)):
+                calc_Intensity[j] += scale * T2_list[i] * omega / (4 * (wave[j] - frequency[i])**2 + omega**2)
 
+        # Normalização e conversão para absorbância
+        max_intensity = max(calc_Intensity)
+        normalized_intensity = [intensity / max_intensity for intensity in calc_Intensity]
+        absorbance = [10 ** (-1 * intensity) for intensity in normalized_intensity]        
+                
+        # Caminho de saída para o arquivo CSV
+        path, new_filename = os.path.split(self.dataObj.filename)
+        output_file = os.path.join(path, f"{new_filename.rstrip('.out')}_Lorenz_IR_1cm_{omega}.csv")
+
+        # Gravar os resultados no arquivo CSV
+        try:
+            self.controller.gravar(output_file, wave, calc_Intensity, normalized_intensity, absorbance)
+            if not batchJob:
+                self.plot_graph(self.dataObj.filename, wave, absorbance)
+            if batchJob:
+                self.txtInput.append("\n ARQUIVO CSV GERADO: " + output_file)
         except Exception as e:
-            erroProc = "**** Erro no arquivo **** :" + saida + "\n" + str(e)
-            self.lblResult.setText(erroProc)            
-            print(erroProc)
+            error_msg = f"**** Erro no arquivo **** : {output_file}\n{str(e)}"
+            self.lblResult.setText(error_msg)
+            print(error_msg)
 
     def checkFile(self, daoObj, batchJob = False):
         
@@ -269,8 +263,8 @@ class Ui(QtWidgets.QMainWindow):
 
     def btnAbrir_click(self):
         self.btnFileFind.setStyleSheet('QPushButton {background-color:cyan; font:bold}')        
-        #rootDir = "F:\MeusDocs\Doutorado\RESULTADOS\SÓ_espectros"
-        rootDir = "E:\OrcaFiles\\new\\"
+        #rootDir = "F:\\MeusDocs\\Doutorado\\RESULTADOS\\SÓ_espectros"
+        rootDir = "E:\\OrcaFiles\\new\\"
         if len(self.pastaOutput) == 0:  
             self.pastaOutput = rootDir;
         
