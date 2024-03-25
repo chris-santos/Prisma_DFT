@@ -1,10 +1,10 @@
  # Prisma software by Christiano dos Santos, PhD
 
-  md file for my PRISMA - software that reads ORCA output file, extract IR frequencies, apply Lorentz convolution, and creates new csv file with infrared transmitance data in range 400-4000cm^-1.
+  PRISMA - software that reads ORCA (versions 4 & 5) output file, extract IR frequencies, apply Lorentz convolution, and creates new csv file with infrared transmitance data in range 400-4000cm^-1.
   main functions: abrir arquivo => open .out ORCA file
-  generate IR spectrum with lorentzian/guassian convolution
+  generate IR spectrum with lorentzian convolution
   find negative frequencies
-  create batch file
+  create batch file: it can read multiple folder structure and  convert .out -> csv files (this function needs to be improved for reading any data folder structure, it's hardcoded for my specific structure)
 
 ## 🛰 Social media
 
