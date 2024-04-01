@@ -205,7 +205,7 @@ class Ui(QtWidgets.QMainWindow):
         
         ##################################################
          # p/ cd vibração da molécula tem um num de onda (frequency) e a intensidade T2
-         # nessa conversão, 1o  usarei a escala de 400 (wavemin) a 4004, então seão 901 pontos
+         # nessa conversão, 1o  usarei a escala de 400 (wavemin) a 4004, então são 901 pontos
          # cd ponto é a somatória da contribuição de T2 em cada num de onda, com a expressão de Lorentz
          # omega = FWHH
         # Cálculo da convolução usando a expressão de Lorentz
