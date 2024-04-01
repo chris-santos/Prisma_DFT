@@ -180,6 +180,11 @@ class Ui(QtWidgets.QMainWindow):
                 + "\n"
                 outfile.write(texto)
     '''
+    # Função para calcular a convolução de Lorentz
+    def convLorentz(self, wave_j, frequency, T2_list, scale, omega):
+        intensity = sum(scale * T2 * omega / (4 * (wave_j - freq)**2 + omega**2) for freq, T2 in zip(frequency, T2_list))
+        return intensity    
+    
     #calcula a convolucao do espectro e grava
     def plotIR(self, irData, batchJob = False):
         # Extrair frequências e intensidades
@@ -204,18 +209,17 @@ class Ui(QtWidgets.QMainWindow):
         scale = 1.0
         
         ##################################################
-         # p/ cd vibração da molécula tem um num de onda (frequency) e a intensidade T2
-         # nessa conversão, 1o  usarei a escala de 400 (wavemin) a 4004, então são 901 pontos
-         # cd ponto é a somatória da contribuição de T2 em cada num de onda, com a expressão de Lorentz
-         # omega = FWHH
+        # p/ cd vibração da molécula tem um num de onda (frequency) e a intensidade T2
+        # nessa conversão, define-se um eixo de 400 (wavemin) a 4000
+        # cd ponto é a somatória da contribuição de T2 em cada num de onda, com a expressão de Lorentz
+        # omega = FWHH        
+       
         # Cálculo da convolução usando a expressão de Lorentz
-        for j in range(len(wave)):
-            for i in range(len(irData)):
-                calc_Intensity[j] += scale * T2_list[i] * omega / (4 * (wave[j] - frequency[i])**2 + omega**2)
+        calc_Intensity_Lorentz = list(map(lambda wave_j: self.convLorentz(wave_j, frequency, T2_list, scale, omega), wave))
 
         # Normalização e conversão para absorbância
-        max_intensity = max(calc_Intensity)
-        normalized_intensity = [intensity / max_intensity for intensity in calc_Intensity]
+        max_intensity = max(calc_Intensity_Lorentz)
+        normalized_intensity = [intensity / max_intensity for intensity in calc_Intensity_Lorentz]
         absorbance = [10 ** (-1 * intensity) for intensity in normalized_intensity]        
                 
         # Caminho de saída para o arquivo CSV
